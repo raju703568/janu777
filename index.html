@@ -124,6 +124,82 @@ footer{text-align:center;padding:25px;color:#8995a5}
 
 <footer>JANU777 © 2026</footer>
 
+<div id="janu-auth" style="background:#111;padding:18px;margin:15px;border:1px solid #d4af37;border-radius:14px">
+  <h3 style="color:#d4af37">JANU777 LOGIN</h3>
+  <input id="janu-email" type="email" placeholder="Email address" style="display:block;width:100%;padding:12px;margin:10px 0">
+  <input id="janu-password" type="password" placeholder="Password" style="display:block;width:100%;padding:12px;margin:10px 0">
+  <button id="janu-login">Login</button>
+  <button id="janu-logout" style="display:none">Logout</button>
+  <p id="janu-status">Please log in to view your wallet.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://ykgtvtfitxcdjboqyjpq.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_LWxedue8L_GTfpAmM6-kzg_9WdMRc6l";
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
+
+const statusText = document.getElementById("janu-status");
+const balance = document.getElementById("balance");
+const loginButton = document.getElementById("janu-login");
+const logoutButton = document.getElementById("janu-logout");
+
+async function loadJanuProfile(user) {
+  const { data, error } = await db
+    .from("profiles")
+    .select("username, coins, role")
+    .eq("id", user.id)
+    .single();
+
+  if (error) {
+    statusText.textContent = "Profile error: " + error.message;
+    return;
+  }
+
+  balance.textContent = data.coins;
+  statusText.textContent = "Welcome, " + data.username;
+  loginButton.style.display = "none";
+  logoutButton.style.display = "inline-block";
+}
+
+loginButton.onclick = async () => {
+  statusText.textContent = "Logging in...";
+
+  const { data, error } = await db.auth.signInWithPassword({
+    email: document.getElementById("janu-email").value,
+    password: document.getElementById("janu-password").value
+  });
+
+  if (error) {
+    statusText.textContent = error.message;
+    return;
+  }
+
+  await loadJanuProfile(data.user);
+};
+
+logoutButton.onclick = async () => {
+  await db.auth.signOut();
+  balance.textContent = "Login to view";
+  statusText.textContent = "You are logged out.";
+  loginButton.style.display = "inline-block";
+  logoutButton.style.display = "none";
+};
+
+balance.textContent = "Login to view";
+
+(async () => {
+  const { data } = await db.auth.getSession();
+  if (data.session) {
+    await loadJanuProfile(data.session.user);
+  }
+})();
+</script>
+
 </body>
 
 </html>
